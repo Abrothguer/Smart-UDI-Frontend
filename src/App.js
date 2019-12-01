@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import React from 'react';
-import { Layout, Drawer, Row, Col, Divider, Icon, Collapse, List } from 'antd';
+import { Layout, Drawer, Row, Col, Divider, Icon, Collapse, List, Input } from 'antd';
 import { withScriptjs, withGoogleMap, GoogleMap, Marker } from "react-google-maps"
 import 'antd/dist/antd.css';
 import axios from 'axios';
@@ -60,6 +60,7 @@ const DescriptionItem = ({ title, content }) => (
   </div>
 );
 
+const { Search } = Input;
 
 class App extends React.Component {
 
@@ -69,7 +70,9 @@ class App extends React.Component {
       markers: [],
       climate: {}
     },
-    current: {}
+    markersShow: [],
+    current: {},
+    first: true
   };
   
   showDrawer = (marker) => {
@@ -94,8 +97,17 @@ class App extends React.Component {
       axios.get('http://10.1.1.194:7059/getData').then(ans => {
         console.log('ANS ist', ans.data)
         this.setState({ data: ans.data })
+        if(this.state.first) {
+          this.setState({ markersShow: this.state.data.markers, first: false })
+        }
       })
     }, 1000);
+
+  }
+
+  buscar (valor) {
+    console.log("USER SEARCHED V", valor)
+    this.setState({ markersShow: this.state.data.markers.filter( (marker) => marker.name.toUpperCase().indexOf(valor.toUpperCase()) >= 0 ) })
   }
 
   renderLocal = () => {
@@ -194,11 +206,13 @@ class App extends React.Component {
             <Col xs={24} lg={6}>
               <Collapse bordered={false}
                 defaultActiveKey={['1']}>
+
+                <Search size="large" placeholder="Pesquise um local" onSearch={value => this.buscar(value)} />
                 
                 <Panel header="Alto risco" key="1">
                   <List
                     itemLayout="horizontal"
-                    dataSource={this.state.data.markers.filter((locale) => locale.danger === 'Alto')}
+                    dataSource={this.state.markersShow.filter((locale) => locale.danger === 'Alto')}
                     renderItem={item => (
                       <List.Item>
                         <List.Item.Meta
@@ -218,7 +232,7 @@ class App extends React.Component {
                 <Panel header="Médio risco" key="2">
                   <List
                     itemLayout="horizontal"
-                    dataSource={this.state.data.markers.filter((locale) => locale.danger === 'Medio')}
+                    dataSource={this.state.markersShow.filter((locale) => locale.danger === 'Medio')}
                     renderItem={item => (
                       <List.Item>
                         <List.Item.Meta
@@ -238,7 +252,7 @@ class App extends React.Component {
                 <Panel header="Baixo risco" key="3">
                   <List
                     itemLayout="horizontal"
-                    dataSource={this.state.data.markers.filter((locale) => locale.danger === 'Baixo')}
+                    dataSource={this.state.markersShow.filter((locale) => locale.danger === 'Baixo')}
                     renderItem={item => (
                       <List.Item>
                         <List.Item.Meta
@@ -266,7 +280,7 @@ class App extends React.Component {
                 containerElement={<div style={{ height: `90vh` }} />}
                 mapElement={<div style={{ height: `100%` }} />}
                 markerClick={this.markerClick}
-                markers={this.state.data.markers}
+                markers={this.state.markersShow}
               />
             </Col>
 
@@ -280,6 +294,7 @@ class App extends React.Component {
             onClose={this.onClose}
             visible={this.state.visible}
             climate={this.state.data.climate}
+            style={{fontSize: '10rem'}}
           >
             {this.renderLocal()}
 
